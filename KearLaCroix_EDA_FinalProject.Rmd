@@ -1,0 +1,57 @@
+---
+title: "KearLaCroix_EDA_FinalProject"
+author: "Sarah Kear"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(here)
+library(tidyverse)
+library(lubridate)
+library(zoo)
+library(trend)
+```
+
+```{r}
+#Make initial dataframes
+here()
+AQI_2010 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2010.csv"), 
+                                stringsAsFactors = TRUE)
+AQI_2011 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2011.csv"), 
+                                stringsAsFactors = TRUE)
+AQI_2012 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2012.csv"), 
+                                stringsAsFactors = TRUE)
+AQI_2013 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2013.csv"), 
+                                stringsAsFactors = TRUE)
+AQI_2014 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2014.csv"), 
+                                stringsAsFactors = TRUE)
+AQI_2015 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2015.csv"), 
+                                stringsAsFactors = TRUE)
+AQI_2016 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2016.csv"), 
+                                stringsAsFactors = TRUE)
+AQI_2017 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2017.csv"), 
+                                stringsAsFactors = TRUE)
+AQI_2018 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2018.csv"), 
+                                stringsAsFactors = TRUE)
+AQI_2019 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2019.csv"), 
+                                stringsAsFactors = TRUE)
+AQI_2020 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2020.csv"), 
+                                stringsAsFactors = TRUE)
+AQI_2021 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2021.csv"), 
+                                stringsAsFactors = TRUE)
+AQI_2022 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2022.csv"), 
+                                stringsAsFactors = TRUE)
+```
+
+```{r}
+#Tidy dataframes together
+AQI_2010_2022 <- rbind(AQI_2010, AQI_2011, AQI_2012, AQI_2013,
+                       AQI_2014, AQI_2015, AQI_2016, AQI_2017,
+                       AQI_2018, AQI_2019, AQI_2020, AQI_2021,
+                       AQI_2022) %>%
+  select(Date, Daily.Max.8.hour.Ozone.Concentration:Site.Name, SITE_LATITUDE, SITE_LONGITUDE) 
+
+AQI_2010_2022$Date <- as.Date(AQI_2010_2022$Date, format="%m/%d/%Y")
+```
+
