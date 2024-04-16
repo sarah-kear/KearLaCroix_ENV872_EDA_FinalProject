@@ -1,9 +1,16 @@
 ---
-title: "KearLaCroix_EDA_FinalProject"
-author: "Sarah Kear"
-date: "`r Sys.Date()`"
-output: html_document
+title: "Correlation of AQI and Weather in Los Angeles County, California"
+author: "Sarah Kear and Cole LaCroix"
+date: "April 30, 2024"
+output: 
+  html_document: 
+    toc: true
+    number_sections: true
+    theme: united
+    highlight: tango
 ---
+[https://github.com/sarah-kear/KearLaCroix_ENV872_EDA_FinalProject](https://github.com/sarah-kear/KearLaCroix_ENV872_EDA_FinalProject)
+
 
 ```{r setup, include=FALSE}
 library(here)
@@ -13,7 +20,7 @@ library(zoo)
 library(trend)
 ```
 
-```{r}
+```{r, include=FALSE}
 #Make initial dataframes
 here()
 AQI_2010 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2010.csv"), 
@@ -44,7 +51,7 @@ AQI_2022 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2022.csv"),
                                 stringsAsFactors = TRUE)
 ```
 
-```{r}
+```{r, include=FALSE}
 #Tidy dataframes together
 AQI_2010_2022 <- rbind(AQI_2010, AQI_2011, AQI_2012, AQI_2013,
                        AQI_2014, AQI_2015, AQI_2016, AQI_2017,
@@ -53,5 +60,45 @@ AQI_2010_2022 <- rbind(AQI_2010, AQI_2011, AQI_2012, AQI_2013,
   select(Date, Daily.Max.8.hour.Ozone.Concentration:Site.Name, SITE_LATITUDE, SITE_LONGITUDE) 
 
 AQI_2010_2022$Date <- as.Date(AQI_2010_2022$Date, format="%m/%d/%Y")
+
+AQI_2010_2022$DAILY_AQI_VALUE <- as.numeric(AQI_2010_2022$DAILY_AQI_VALUE)
+
 ```
+
+```{r, include=FALSE}
+Days <- as.data.frame(seq(as.Date("2010-01-01"), 
+                          as.Date("2022-12-31"), 
+                          by = "day"))
+
+colnames(Days) <- "Date"
+
+AQI_2010_2022 <- left_join(Days, 
+                           AQI_2010_2022, 
+                           by = "Date")
+dim(AQI_2010_2022$DAILY_AQI_VALUE)
+
+#AQI_2010_2022 <- 
+  #AQI_2010_2022 %>% 
+  #mutate(DAILY_AQI_VALUE = zoo::na.approx(
+    #DAILY_AQI_VALUE))
+```
+
+## List of Tables
+
+## List of Figures
+
+## Rationale
+
+## Research Questions
+
+## Data Wrangling
+
+## Exploratory Analysis
+
+## Analysis
+
+## Summary and Conclusions
+
+## References
+
 
