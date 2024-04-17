@@ -11,6 +11,10 @@ output:
 ---
 [https://github.com/sarah-kear/KearLaCroix_ENV872_EDA_FinalProject](https://github.com/sarah-kear/KearLaCroix_ENV872_EDA_FinalProject)
 
+To do:
+Sarah
+- Figure out how to make an average for 12/31/2022
+
 
 ```{r setup, include=FALSE}
 library(here)
@@ -18,7 +22,35 @@ library(tidyverse)
 library(lubridate)
 library(zoo)
 library(trend)
+library(Kendall)
+library(tseries)
 ```
+
+```{r, include=FALSE}
+#final project plot theme
+finalproject.theme <- theme_classic(base_size = 12) +
+  theme(
+    plot.title = element_text(
+      color= 'black',
+      size = 12 #decreased font size
+    ),
+    axis.text = element_text(
+      color = "black",
+      size = 10
+      ),
+   axis.title.x = element_text( #Updating x-axis
+     color = "black",
+     size = 11
+   ),
+   axis.title.y = element_text( #Updating y-axis
+     color = "black",
+     size = 11
+   ),
+    plot.background = element_blank() #removing plot edge/background
+   )
+theme_set(finalproject.theme)
+```
+
 
 ```{r, include=FALSE}
 #Make initial dataframes
@@ -52,42 +84,62 @@ AQI_2022 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2022.csv"),
 ```
 
 ```{r, include=FALSE}
-#Tidy dataframes together
+#combined 2010 to 2022 AQI dataframes together
 AQI_2010_2022 <- rbind(AQI_2010, AQI_2011, AQI_2012, AQI_2013,
                        AQI_2014, AQI_2015, AQI_2016, AQI_2017,
                        AQI_2018, AQI_2019, AQI_2020, AQI_2021,
                        AQI_2022) %>%
   select(Date, Daily.Max.8.hour.Ozone.Concentration:Site.Name, SITE_LATITUDE, SITE_LONGITUDE) 
 
+#Formatted data column to date
 AQI_2010_2022$Date <- as.Date(AQI_2010_2022$Date, format="%m/%d/%Y")
 
-AQI_2010_2022$DAILY_AQI_VALUE <- as.numeric(AQI_2010_2022$DAILY_AQI_VALUE)
 
 ```
 
 ```{r, include=FALSE}
+# read in LA.weather
+LA.weather <- read.csv(here("Raw_Data/laweather.csv"), 
+                                stringsAsFactors = TRUE)
+
+# format LA.weather dates
+LA.weather$DATE <- as.Date(LA.weather$DATE, format="%m/%d/%y")
+
+colnames(LA.weather)[colnames(LA.weather) == "DATE"] <- "Date"
+```
+
+```{r, include=FALSE}
+# join LA.weather and AQI
+combined_data <- merge(LA.weather, AQI_2010_2022, by = "Date")
+```
+
+
+```{r, include=FALSE}
+# generated daily datafraome for 2010 to 2022
 Days <- as.data.frame(seq(as.Date("2010-01-01"), 
                           as.Date("2022-12-31"), 
                           by = "day"))
 
 colnames(Days) <- "Date"
 
+#joined this with the AQI Dataframe
 AQI_2010_2022 <- left_join(Days, 
                            AQI_2010_2022, 
                            by = "Date")
 dim(AQI_2010_2022$DAILY_AQI_VALUE)
 
-#AQI_2010_2022 <- 
-  #AQI_2010_2022 %>% 
-  #mutate(DAILY_AQI_VALUE = zoo::na.approx(
-    #DAILY_AQI_VALUE))
+# Used linear interpolation to fill missing AQI data
+AQI_2010_2022 <- AQI_2010_2022 %>%
+  mutate(DAILY_AQI_VALUE = na.approx(DAILY_AQI_VALUE, na.rm = FALSE))
+
 ```
+
 
 ## List of Tables
 
 ## List of Figures
 
-## Rationale
+## Introduction /Rationale
 
 ## Research Questions
 
@@ -100,5 +152,36 @@ dim(AQI_2010_2022$DAILY_AQI_VALUE)
 ## Summary and Conclusions
 
 ## References
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#plotting AQI values
+plot1 <- AQI_2010_2022 %>%
+  ggplot(aes(x = Date,
+             y = DAILY_AQI_VALUE)) +
+  geom_line(size = 0.5) +
+  geom_smooth(method = "lm", se = FALSE, col="red1") +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  ylab("Daily Air Quality Index (AQI)") +
+  xlab("Year") +
+  ggtitle("Daily Air Quality Index (AQI) 2010-2022 in Los Angeles County") +
+  finalproject.theme
+
+plot1
+```
+
+```{r, include=FALSE}
+# generating time series objects
+f_month <- month(first(AQI_2010_2022$Date))
+f_year <- year(first(AQI_2010_2022$Date))
+
+LA.AQI.daily.ts <- ts(AQI_2010_2022$DAILY_AQI_VALUE,
+                           start = c(f_year,f_month),
+                           frequency = 365)
+
+# decomposing
+#LA.AQI.daily.decomp <- stl(LA.AQI.daily.ts,
+                                 # s.window = "periodic")
+#plot(LA.AQI.daily.decomp)
+```
 
 
