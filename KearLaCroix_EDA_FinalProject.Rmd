@@ -14,8 +14,15 @@ output:
 To do:
 Sarah
 - Figure out how to make an average for 12/31/2022
+## List of Tables
 
+## List of Figures
 
+## Introduction /Rationale
+
+## Research Questions
+
+## Data Wrangling
 ```{r setup, include=FALSE}
 library(here)
 library(tidyverse)
@@ -51,7 +58,6 @@ finalproject.theme <- theme_classic(base_size = 12) +
 theme_set(finalproject.theme)
 ```
 
-
 ```{r, include=FALSE}
 #Make initial dataframes
 here()
@@ -81,20 +87,44 @@ AQI_2021 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2021.csv"),
                                 stringsAsFactors = TRUE)
 AQI_2022 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2022.csv"), 
                                 stringsAsFactors = TRUE)
+AQI_2023 <- read.csv(here("Raw_Data/ad_viz_plotval_data_2023.csv"), 
+                                stringsAsFactors = TRUE)
 ```
 
 ```{r, include=FALSE}
-#combined 2010 to 2022 AQI dataframes together
-AQI_2010_2022 <- rbind(AQI_2010, AQI_2011, AQI_2012, AQI_2013,
+#combined 2010 to 2023 AQI dataframes together
+AQI_2010_2023 <- rbind(AQI_2010, AQI_2011, AQI_2012, AQI_2013,
                        AQI_2014, AQI_2015, AQI_2016, AQI_2017,
                        AQI_2018, AQI_2019, AQI_2020, AQI_2021,
-                       AQI_2022) %>%
+                       AQI_2022, AQI_2023) %>%
   select(Date, Daily.Max.8.hour.Ozone.Concentration:Site.Name, SITE_LATITUDE, SITE_LONGITUDE) 
 
 #Formatted data column to date
-AQI_2010_2022$Date <- as.Date(AQI_2010_2022$Date, format="%m/%d/%Y")
+AQI_2010_2023$Date <- as.Date(AQI_2010_2023$Date, format="%m/%d/%Y")
 
+AQI_2010_2023 <- subset(AQI_2010_2023, Date >= as.Date("2010-01-01") & Date <= as.Date("2023-01-01"))
 
+# generated daily datafraome for 2010 to 20223
+Days <- as.data.frame(seq(as.Date("2010-01-01"), 
+                          as.Date("2023-01-01"), 
+                          by = "day"))
+
+colnames(Days) <- "Date"
+
+#joined this with the AQI Dataframe
+AQI_2010_2023 <- left_join(Days, 
+                           AQI_2010_2023, 
+                           by = "Date")
+dim(AQI_2010_2023$DAILY_AQI_VALUE)
+
+# Used linear interpolation to fill missing AQI data
+AQI_2010_2023 <- 
+  AQI_2010_2023 %>% 
+  mutate(DAILY_AQI_VALUE = zoo::na.approx(
+    DAILY_AQI_VALUE))
+
+# Make final data frame to 2010 to 2022 AQI
+AQI_2010_2022 <- subset(AQI_2010_2023, Date >= as.Date("2010-01-01") & Date <= as.Date("2022-12-31"))
 ```
 
 ```{r, include=FALSE}
@@ -113,45 +143,55 @@ colnames(LA.weather)[colnames(LA.weather) == "DATE"] <- "Date"
 combined_data <- merge(LA.weather, AQI_2010_2022, by = "Date")
 ```
 
+## Exploratory Analysis
+```{r}
+# data frame with the coordinates 
+data <- data.frame(
+  Site = c("Weather Station", "Air Quality Station"),
+  Latitude = c(34.02, 34.07),
+  Longitude = c(-118.3, -118.2)
+)
 
-```{r, include=FALSE}
-# generated daily datafraome for 2010 to 2022
-Days <- as.data.frame(seq(as.Date("2010-01-01"), 
-                          as.Date("2022-12-31"), 
-                          by = "day"))
+# Convert the data frame to an sf object
+data_sf <- st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
 
-colnames(Days) <- "Date"
+popup_text <- paste("<b>", data_sf$Site, "</b>", sep = "")
 
-#joined this with the AQI Dataframe
-AQI_2010_2022 <- left_join(Days, 
-                           AQI_2010_2022, 
-                           by = "Date")
-dim(AQI_2010_2022$DAILY_AQI_VALUE)
-
-# Used linear interpolation to fill missing AQI data
-AQI_2010_2022 <- AQI_2010_2022 %>%
-  mutate(DAILY_AQI_VALUE = na.approx(DAILY_AQI_VALUE, na.rm = FALSE))
-
+# leaflet map
+leaflet(data = data_sf) %>%
+  addTiles() %>%  # This adds the base tiles from OpenStreetMap
+  addMarkers(popup = popup_text)
 ```
 
+```{r}
+library(mapview)
+library(sf)
+California_Counties <- st_read(here('Spatial_Data/cb_2018_us_county_20m.shp')) %>%
+  filter(STATEFP == "06")
+st_crs(California_Counties)
 
-## List of Tables
+data <- data.frame(
+  Site = c("Weather Station", "Air Quality Station"),
+  Latitude = c(34.02, 34.07),
+  Longitude = c(-118.3, -118.2))
 
-## List of Figures
+data_sf <- st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4269)
 
-## Introduction /Rationale
+Los_Angeles_County <- California_Counties %>% 
+  filter(NAME == "Los Angeles")
 
-## Research Questions
+mapviewOptions(basemaps.color.shuffle = FALSE)
 
-## Data Wrangling
+mapview(California_Counties,
+        col.regions = "azure1",
+        col ='darkslategrey',
+        lwd = 1) +
+  mapview(Los_Angeles_County,
+          col.regions = "#DC0000B2") +
+  mapview(data_sf,
+          zcol = "Site")
+```
 
-## Exploratory Analysis
-
-## Analysis
-
-## Summary and Conclusions
-
-## References
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #plotting AQI values
@@ -169,7 +209,8 @@ plot1 <- AQI_2010_2022 %>%
 plot1
 ```
 
-```{r, include=FALSE}
+## Analysis
+```{r}
 # generating time series objects
 f_month <- month(first(AQI_2010_2022$Date))
 f_year <- year(first(AQI_2010_2022$Date))
@@ -179,9 +220,74 @@ LA.AQI.daily.ts <- ts(AQI_2010_2022$DAILY_AQI_VALUE,
                            frequency = 365)
 
 # decomposing
-#LA.AQI.daily.decomp <- stl(LA.AQI.daily.ts,
-                                 # s.window = "periodic")
-#plot(LA.AQI.daily.decomp)
+LA.AQI.daily.decomp <- stl(LA.AQI.daily.ts,
+                           s.window = "periodic")
+plot(LA.AQI.daily.decomp)
+```
+
+```{r}
+#LA.AQI.daily.trend <- trend::smk.test(LA.AQI.daily.ts)
+#LA.AQI.daily.trend
+#summary(LA.AQI.daily.trend)
+```
+## Summary and Conclusions
+
+## References
+
+
+
+
+
+
+```{r}
+library(ggplot2)
+
+lm.aqi <- lm(combined_data$DAILY_AQI_VALUE ~ combined_data$TMAX + combined_data$TMIN + combined_data$WDF2 + combined_data$WDF5 + combined_data$PRCP)
+
+summary(lm.aqi)
+lm.aqi
+
+library(ggplot2)
+
+# DAILY_AQI_VALUE vs TMAX
+ggplot(combined_data, aes(x = TMAX, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Scatter plot of DAILY_AQI_VALUE vs TMAX",
+         x = "TMAX",
+         y = "DAILY AQI VALUE")
+
+# DAILY_AQI_VALUE vs TMIN
+ggplot(combined_data, aes(x = TMIN, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Scatter plot of DAILY_AQI_VALUE vs TMIN",
+         x = "TMIN",
+         y = "DAILY AQI VALUE")
+
+# DAILY_AQI_VALUE vs WDF2
+ggplot(combined_data, aes(x = WDF2, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Scatter plot of DAILY_AQI_VALUE vs WDF2",
+         x = "WDF2",
+         y = "DAILY AQI VALUE")
+
+# DAILY_AQI_VALUE vs WDF5
+ggplot(combined_data, aes(x = WDF5, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Scatter plot of DAILY_AQI_VALUE vs WDF5",
+         x = "WDF5",
+         y = "DAILY AQI VALUE")
+
+# DAILY_AQI_VALUE vs PRCP
+ggplot(combined_data, aes(x = PRCP, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Scatter plot of DAILY_AQI_VALUE vs PRCP",
+         x = "PRCP",
+         y = "DAILY AQI VALUE")
 ```
 
 
