@@ -3,26 +3,30 @@ title: "Correlation of AQI and Weather in Los Angeles County, California"
 author: "Sarah Kear and Cole LaCroix"
 date: "April 30, 2024"
 output: 
-  html_document: 
+  bookdown::html_document2:
+    df_print: paged
     toc: true
-    number_sections: true
-    theme: united
-    highlight: tango
+    fig_caption: yes
+  pdf_document:
+    keep_tex: yes
+    fig_caption: yes
+subtitle: https://github.com/sarah-kear/KearLaCroix_ENV872_EDA_FinalProject
+geometry: margin=2.54cm
+fontsize: 12pt
+mainfont: Times New Roman
+editor_options:
+  chunk_output_type: console
 ---
-[https://github.com/sarah-kear/KearLaCroix_ENV872_EDA_FinalProject](https://github.com/sarah-kear/KearLaCroix_ENV872_EDA_FinalProject)
 
-To do:
-Sarah
-- Figure out how to make an average for 12/31/2022
-## List of Tables
+# List of Tables
+\listoftables
+# List of Figures
+\listoffigures
+# Introduction /Rationale
 
-## List of Figures
+# Research Questions
 
-## Introduction /Rationale
-
-## Research Questions
-
-## Data Wrangling
+# Data Wrangling
 ```{r setup, include=FALSE}
 library(here)
 library(tidyverse)
@@ -31,6 +35,9 @@ library(zoo)
 library(trend)
 library(Kendall)
 library(tseries)
+library(mapview)
+library(sf)
+library(ggplot2)
 ```
 
 ```{r, include=FALSE}
@@ -143,8 +150,8 @@ colnames(LA.weather)[colnames(LA.weather) == "DATE"] <- "Date"
 combined_data <- merge(LA.weather, AQI_2010_2022, by = "Date")
 ```
 
-## Exploratory Analysis
-```{r}
+# Exploratory Analysis
+```{r,fig.cap="Location of AQI and Weather Data Stations", echo=FALSE, message=FALSE, warning=FALSE}
 # data frame with the coordinates 
 data <- data.frame(
   Site = c("Weather Station", "Air Quality Station"),
@@ -158,18 +165,12 @@ data_sf <- st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
 popup_text <- paste("<b>", data_sf$Site, "</b>", sep = "")
 
 # leaflet map
-leaflet(data = data_sf) %>%
-  addTiles() %>%  # This adds the base tiles from OpenStreetMap
-  addMarkers(popup = popup_text)
+#leaflet(data = data_sf) %>%
+  #addTiles() %>%  # This adds the base tiles from OpenStreetMap
+  #addMarkers(popup = popup_text)
 ```
 
-```{r}
-library(mapview)
-library(sf)
-California_Counties <- st_read(here('Spatial_Data/cb_2018_us_county_20m.shp')) %>%
-  filter(STATEFP == "06")
-st_crs(California_Counties)
-
+```{r,fig.cap="Location of AQI and Weather Data Stations", echo=FALSE, message=FALSE, warning=FALSE}
 data <- data.frame(
   Site = c("Weather Station", "Air Quality Station"),
   Latitude = c(34.02, 34.07),
@@ -177,23 +178,29 @@ data <- data.frame(
 
 data_sf <- st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4269)
 
+California_Counties <- st_read(here('Spatial_Data/cb_2018_us_county_20m.shp')) %>% 
+  filter(STATEFP == "06")
+
 Los_Angeles_County <- California_Counties %>% 
   filter(NAME == "Los Angeles")
 
+bbox_LA <- st_bbox(Los_Angeles_County)
 mapviewOptions(basemaps.color.shuffle = FALSE)
 
-mapview(California_Counties,
+
+map1 <-mapview(Los_Angeles_County,
         col.regions = "azure1",
         col ='darkslategrey',
-        lwd = 1) +
-  mapview(Los_Angeles_County,
-          col.regions = "#DC0000B2") +
+        lwd = 2.5,
+        map.types = "OpenStreetMap") +
   mapview(data_sf,
           zcol = "Site")
+
+map1
 ```
 
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Los Angeles County Daily AQI from 2010 to 2022"}
 #plotting AQI values
 plot1 <- AQI_2010_2022 %>%
   ggplot(aes(x = Date,
@@ -209,7 +216,7 @@ plot1 <- AQI_2010_2022 %>%
 plot1
 ```
 
-## Analysis
+# Analysis
 ```{r}
 # generating time series objects
 f_month <- month(first(AQI_2010_2022$Date))
@@ -226,13 +233,42 @@ plot(LA.AQI.daily.decomp)
 ```
 
 ```{r}
-#LA.AQI.daily.trend <- trend::smk.test(LA.AQI.daily.ts)
-#LA.AQI.daily.trend
-#summary(LA.AQI.daily.trend)
-```
-## Summary and Conclusions
+LA.AQI.daily.components <- as.data.frame(LA.AQI.daily.decomp$time.series[,2:3])
 
-## References
+NonSeasonal.LA.AQI.daily <- mutate(LA.AQI.daily.components,
+                                   NonSeasonal = LA.AQI.daily.components$trend +
+                                     LA.AQI.daily.components$remainder)
+
+# nonseasonal time series
+NonSeasonal.LA.AQI.daily.ts <- ts(NonSeasonal.LA.AQI.daily$NonSeasonal,
+                     start = c(f_year,f_month), frequency = 365)
+
+# adding date column
+NonSeasonal.LA.AQI.daily <- NonSeasonal.LA.AQI.daily %>% 
+                                mutate(Date = AQI_2010_2022$Date)
+
+# mann kendall test without seasonality
+MannKendall(NonSeasonal.LA.AQI.daily.ts)
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Nonseasonal Data from the Los Angeles County Daily AQI Time Series"}
+#nonseasonal plot
+plot2 <- ggplot(NonSeasonal.LA.AQI.daily, aes(Date, NonSeasonal)) +
+  geom_point(color = "black", size = 0.5) +
+  scale_y_log10() +
+  geom_smooth(method = "lm", color = "red1") +
+  labs(x = "Date", y = "Non-Seasonal AQI Value", 
+  title = "Non-Seasonal AQI Value of Los Angeles County",
+  subtitle = "2010-2022") +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  finalproject.theme
+
+plot2
+```
+
+# Summary and Conclusions
+
+# References
 
 
 
