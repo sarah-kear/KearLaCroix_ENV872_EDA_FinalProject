@@ -22,11 +22,16 @@ editor_options:
 \listoftables
 # List of Figures
 \listoffigures
-# Introduction /Rationale
+# Introduction/Rationale
+There is human health outcomes that are directly impacted by AQI.
 
 # Research Questions
+1. The daily and monthly AQI values in Los Angeles County correlated with seasonality?
+
+2. What is the correlation between AQI and different weather phenomena in Los Angeles County?
 
 # Data Wrangling
+The daily AQI values were pulled from the Environmental Protection Agency's (EPA) AirNow dataset. The weather data was pulled from National Oceanic Atmospheric Administion (NOAA).
 ```{r setup, include=FALSE}
 library(here)
 library(tidyverse)
@@ -151,25 +156,6 @@ combined_data <- merge(LA.weather, AQI_2010_2022, by = "Date")
 ```
 
 # Exploratory Analysis
-```{r,fig.cap="Location of AQI and Weather Data Stations", echo=FALSE, message=FALSE, warning=FALSE}
-# data frame with the coordinates 
-data <- data.frame(
-  Site = c("Weather Station", "Air Quality Station"),
-  Latitude = c(34.02, 34.07),
-  Longitude = c(-118.3, -118.2)
-)
-
-# Convert the data frame to an sf object
-data_sf <- st_as_sf(data, coords = c("Longitude", "Latitude"), crs = 4326)
-
-popup_text <- paste("<b>", data_sf$Site, "</b>", sep = "")
-
-# leaflet map
-#leaflet(data = data_sf) %>%
-  #addTiles() %>%  # This adds the base tiles from OpenStreetMap
-  #addMarkers(popup = popup_text)
-```
-
 ```{r,fig.cap="Location of AQI and Weather Data Stations", echo=FALSE, message=FALSE, warning=FALSE}
 data <- data.frame(
   Site = c("Weather Station", "Air Quality Station"),
