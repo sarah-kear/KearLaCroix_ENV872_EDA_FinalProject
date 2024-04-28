@@ -31,7 +31,9 @@ There is human health outcomes that are directly impacted by AQI.
 2. What is the correlation between AQI and different weather phenomena in Los Angeles County?
 
 # Data Wrangling
-The daily AQI values were pulled from the Environmental Protection Agency's (EPA) AirNow dataset. The weather data was pulled from National Oceanic Atmospheric Administion (NOAA).
+The daily AQI values were pulled from the Environmental Protection Agency's (EPA) AirNow dataset. The weather data was pulled from National Oceanic Atmospheric Administration (NOAA). Both datasets provided fairly complete daily data from January 1, 2010 to December 31, 2022.
+
+In order to 
 ```{r setup, include=FALSE}
 library(here)
 library(tidyverse)
