@@ -30,10 +30,12 @@ There is human health outcomes that are directly impacted by AQI.
 
 2. What is the correlation between AQI and different weather phenomena in Los Angeles County?
 
-# Data Wrangling
-The daily AQI values were pulled from the Environmental Protection Agency's (EPA) AirNow dataset. The weather data was pulled from National Oceanic Atmospheric Administration (NOAA). Both datasets provided fairly complete daily data from January 1, 2010 to December 31, 2022.
 
-In order to 
+# Data Wrangling
+The daily AQI values were pulled from the Environmental Protection Agency's (EPA) AirNow dataset. The weather data was pulled from National Oceanic Atmospheric Administration (NOAA). Both datasets provided fairly complete daily data from January 1, 2010 to December 31, 2022. The datasets were cleaned and then combined to include the Data of data collection and the six values used for time series analysis and generalized linear models. 
+
+In order to conduct time series analysis on the daily AQI values, we conducted linear interpolation to fill any missing daily AQI values. We used linear interpolation as it creates an average, and best fits AQI's daily gradual change. 
+
 ```{r setup, include=FALSE}
 library(here)
 library(tidyverse)
@@ -45,6 +47,7 @@ library(tseries)
 library(mapview)
 library(sf)
 library(ggplot2)
+library(knitr)
 ```
 
 ```{r, include=FALSE}
@@ -111,7 +114,7 @@ AQI_2010_2023 <- rbind(AQI_2010, AQI_2011, AQI_2012, AQI_2013,
                        AQI_2014, AQI_2015, AQI_2016, AQI_2017,
                        AQI_2018, AQI_2019, AQI_2020, AQI_2021,
                        AQI_2022, AQI_2023) %>%
-  select(Date, Daily.Max.8.hour.Ozone.Concentration:Site.Name, SITE_LATITUDE, SITE_LONGITUDE) 
+  select(Date, DAILY_AQI_VALUE) 
 
 #Formatted data column to date
 AQI_2010_2023$Date <- as.Date(AQI_2010_2023$Date, format="%m/%d/%Y")
@@ -144,7 +147,13 @@ AQI_2010_2022 <- subset(AQI_2010_2023, Date >= as.Date("2010-01-01") & Date <= a
 ```{r, include=FALSE}
 # read in LA.weather
 LA.weather <- read.csv(here("Raw_Data/laweather.csv"), 
-                                stringsAsFactors = TRUE)
+                                stringsAsFactors = TRUE) %>%
+  select(DATE, PRCP, TMAX:WDF5) %>%
+  rename(Temp.Max = TMAX,
+         Temp.Min = TMIN,
+         Wind.Direct.2m = WDF2,
+         Wind.Direct.5m = WDF5,
+         Precipitation = PRCP)
 
 # format LA.weather dates
 LA.weather$DATE <- as.Date(LA.weather$DATE, format="%m/%d/%y")
@@ -155,6 +164,27 @@ colnames(LA.weather)[colnames(LA.weather) == "DATE"] <- "Date"
 ```{r, include=FALSE}
 # join LA.weather and AQI
 combined_data <- merge(LA.weather, AQI_2010_2022, by = "Date")
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+DatasetTable <- data.frame(
+  Column = c('Date', 
+           'Precipitation',
+           'Temp.Max',
+           'Temp.Min',
+           'Wind.Direct.2m',
+           'Wind.Direct.5m',
+           'DAILY_AQI_VALUE'),
+  Description = c('Date of Collection',
+                  'Daily Total Precipitation',
+                  'Daily Maximum Temperature',
+                  'Daily Minimum Temperature',
+                  'Wind Direction 2 meters Above Ground',
+                  'Wind Direction 5 meters Above Gound',
+                  'Daily Air Quality Index (AQI) Value'))
+
+knitr::kable(DatasetTable,
+             caption ="Table Dataset Structure Table")
 ```
 
 # Exploratory Analysis
@@ -263,7 +293,7 @@ plot2
 
 
 
-```{r}
+
 library(ggplot2)
 
 lm.aqi <- lm(combined_data$DAILY_AQI_VALUE ~ combined_data$TMAX + combined_data$TMIN + combined_data$WDF2 + combined_data$WDF5 + combined_data$PRCP)
@@ -312,6 +342,6 @@ ggplot(combined_data, aes(x = PRCP, y = DAILY_AQI_VALUE)) +
     labs(title = "Scatter plot of DAILY_AQI_VALUE vs PRCP",
          x = "PRCP",
          y = "DAILY AQI VALUE")
-```
+         
 
 
