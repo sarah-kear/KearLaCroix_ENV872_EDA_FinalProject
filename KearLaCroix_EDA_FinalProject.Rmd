@@ -25,14 +25,13 @@ editor_options:
 # List of Figures
 - Figure \@ref(fig:fig2): Los Angeles County Monthly AQI from 2010 to 2022
 - Figure \@ref(fig:fig3): Los Angeles County Monthly Minimum and Maximum Temperature from 2010 to 2022
-- Figure \@ref(fig:fig4): Los Angeles County Monthly Wind Direction 2 and 5 meters from 2010 to 2022
+- Figure \@ref(fig:fig4): Los Angeles County Monthly Average Wind Speed from 2010 to 2022
 - Figure \@ref(fig:fig5): Los Angeles County Monthly Precipitation from 2010 to 2022
 - Figure \@ref(fig:fig6): Los Angeles County AQI Values Time Series Decomposed Components
 - Figure \@ref(fig:fig7): Los Angeles County Daily AQI Time Series Nonseasonal Data
 - Figure \@ref(fig:fig9): Daily AQI Value vs Maximum Temperature
 - Figure \@ref(fig:fig10): Daily AQI Value vs Minimum Temperature
-- Figure \@ref(fig:fig11): Daily AQI Value vs Wind Direction, 2m
-- Figure \@ref(fig:fig12): Daily AQI Value vs Wind Direction, 5m
+- Figure \@ref(fig:fig11): Daily AQI Value vs Average Wind Speed
 - Figure \@ref(fig:fig13): Daily AQI Value vs Precipitation
 
 # Introduction/Rationale
@@ -159,11 +158,10 @@ AQI_2010_2022 <- subset(AQI_2010_2023, Date >= as.Date("2010-01-01") & Date <= a
 # read in LA.weather
 LA.weather <- read.csv(here("Raw_Data/laweather.csv"), 
                                 stringsAsFactors = TRUE) %>%
-  select(DATE, PRCP, TMAX:WDF5) %>%
-  rename(Temp.Max = TMAX,
+  select(DATE, AWND, PRCP, TMAX:TMIN) %>%
+  rename(Avg.Wind = AWND,
+         Temp.Max = TMAX,
          Temp.Min = TMIN,
-         Wind.Direct.2m = WDF2,
-         Wind.Direct.5m = WDF5,
          Precipitation = PRCP)
 
 # format LA.weather dates
@@ -183,15 +181,13 @@ DatasetTable <- data.frame(
            'Precipitation',
            'Temp.Max',
            'Temp.Min',
-           'Wind.Direct.2m',
-           'Wind.Direct.5m',
+           "Avg.Wind",
            'DAILY_AQI_VALUE'),
   Description = c('Date of Collection',
                   'Daily Total Precipitation',
                   'Daily Maximum Temperature',
                   'Daily Minimum Temperature',
-                  'Wind Direction 2 meters Above Ground',
-                  'Wind Direction 5 meters Above Ground',
+                  'Average Wind Speed',
                   'Daily Air Quality Index (AQI) Value'))
 
 knitr::kable(DatasetTable,
@@ -232,7 +228,7 @@ map1
 ```
 <br>
 <br>
-We then created graphs to illustrate the average monthly AQI values, maximum and minimum temperature, Wind at 2 and 5 meters, and precipitation. Through exploratory analysis, we found that average AQI, minimum and maximum temperature slightly increase between 2010 and 2022.
+We then created graphs to illustrate the average monthly AQI values, maximum and minimum temperature, average wind speed, and precipitation. Through exploratory analysis, we found that average AQI, minimum and maximum temperature, and average wind speed slightly increased between 2010 and 2022.
 <br>
 <br>
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
@@ -240,10 +236,8 @@ combined_data.monthly <- combined_data %>%
   mutate(year = lubridate::year(Date),
          month = lubridate::month(Date, label = TRUE, abbr = FALSE)) %>%
   group_by(year, month) %>%
-  summarise(mean.Wind.Direct.2m = mean(Wind.Direct.2m,
+  summarise(mean.Avg.Wind = mean(Avg.Wind,
                                             na.rm = TRUE),
-            mean.Wind.Direct.5m = mean(Wind.Direct.5m,
-                                       na.rm = TRUE),
             mean.Temp.Max = mean(Temp.Max,
                                  na.rm = TRUE),
             mean.Temp.Min = mean(Temp.Min,
@@ -300,33 +294,19 @@ plot2
 ```
 <br>
 <br>
-In comparison, monthly wind direction and precipitation have a slight decrease between 2010 and 2022. With the varying changes in the different weather phenomena -- temperature, wind direction, and precipitation -- we found it critical to understand how these phenomena factor into the daily AQI values and potential impacts on human health.
-<br>
-<br>
-```{r fig4, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Los Angeles County Monthly Wind Direction 2 and 5 meters from 2010 to 2022"}
+```{r fig4, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Los Angeles County Monthly Average Wind Speed"}
 plot3 <- combined_data.monthly %>%
   ggplot(aes(x = Date)) +
-  geom_line(aes(y = mean.Wind.Direct.2m, color = "Wind Direction, 2m"),
-            alpha=0.7) +
-  geom_line(aes(y = mean.Wind.Direct.5m, color = "Wind Direction, 5m"),
-            alpha=0.7) +
-  geom_smooth(aes(y = mean.Wind.Direct.2m),
+  geom_line(aes(y = mean.Avg.Wind, color = "Average Wind Speed")) +
+  geom_smooth(aes(y = mean.Avg.Wind),
               method = "lm",
               se = FALSE,
               col = "chocolate",
               alpha=0.7) +
-  geom_smooth(aes(y = mean.Wind.Direct.5m),
-              method = "lm",
-              se = FALSE,
-              col = "deepskyblue",
-              alpha=0.7) +
-  scale_color_manual(values = c("Wind Direction, 2m" = "chocolate4",
-                                 "Wind Direction, 5m" = "cornflowerblue"),
-                      labels = c("Wind Direction, 2m", "Wind Direction, 5m")) +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   ylab("Wind Direction") +
   xlab("Year") +
-  ggtitle("Monthly Wind Direction at 2 and 5 meters during 2010-2022 in Los Angeles County") +
+  ggtitle("Monthly Average Wind Speed during 2010-2022 in Los Angeles County") +
   labs(color = "Legend") +
   finalproject.theme +
   theme(axis.text.x = element_text(angle = 90, 
@@ -336,6 +316,9 @@ plot3 <- combined_data.monthly %>%
 
 plot3
 ```
+<br>
+<br>
+In comparison, monthly average precipitation have a slight decrease between 2010 and 2022. With the varying changes in the different weather phenomena -- temperature, wind speed, and precipitation -- we found it critical to understand how these phenomena factor into the daily AQI values.
 <br>
 <br>
 ```{r fig5, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Los Angeles County Monthly Precipitation from 2010 to 2022"}
@@ -437,7 +420,7 @@ combined_data <- merge(combined_data,
 ```
 
 ```{r, include=FALSE}
-lm.aqi <- lm(combined_data$DAILY_AQI_VALUE ~ combined_data$Temp.Max + combined_data$Temp.Min + combined_data$Wind.Direct.2m + combined_data$Wind.Direct.5m + combined_data$Precipitation)
+lm.aqi <- lm(combined_data$DAILY_AQI_VALUE ~ combined_data$Temp.Max + combined_data$Temp.Min + combined_data$Avg.Wind + combined_data$Precipitation)
 summary(lm.aqi)
 ```
 
@@ -447,8 +430,7 @@ stargazer(lm.aqi, type="html",
           dep.var.labels = c("Daily AQI Value"),
           covariate.labels=c("Maximum Temperature",
                              "Minimum Temperature",
-                             "Wind Direction, 2 meters",
-                             "Wind Direction, 5 meters",
+                             "Average Wind Speed",
                              "Precipitation"),
           out="models1.txt")
 ```
@@ -476,24 +458,13 @@ ggplot(combined_data, aes(x = Temp.Min, y = DAILY_AQI_VALUE)) +
 ```
 <br>
 <br>
-```{r fig11, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Daily AQI Value vs Wind Direction, 2m"}
+```{r fig11, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Daily AQI Value vs Average Wind Speed"}
 # DAILY_AQI_VALUE vs WDF2
-ggplot(combined_data, aes(x = Wind.Direct.2m, y = DAILY_AQI_VALUE)) +
+ggplot(combined_data, aes(x = Avg.Wind, y = DAILY_AQI_VALUE)) +
     geom_point() +
     geom_smooth(method = "lm", se = FALSE) +
-    labs(title = "Scatter plot of Daily AQI Value vs Wind Direction, 2m",
-         x = "Wind Direction",
-         y = "Daily AQI Value")
-```
-<br>
-<br>
-```{r fig12, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Daily AQI Value vs Wind Direction, 5m"}
-# DAILY_AQI_VALUE vs WDF5
-ggplot(combined_data, aes(x = Wind.Direct.5m, y = DAILY_AQI_VALUE)) +
-    geom_point() +
-    geom_smooth(method = "lm", se = FALSE) +
-    labs(title = "Scatter plot of Daily AQI Value vs Wind Direction, 5m",
-         x = "Wind Direction",
+    labs(title = "Scatter plot of Daily AQI Value vs Average Wind Speed",
+         x = "Wind Speed (MPH)",
          y = "Daily AQI Value")
 ```
 <br>
