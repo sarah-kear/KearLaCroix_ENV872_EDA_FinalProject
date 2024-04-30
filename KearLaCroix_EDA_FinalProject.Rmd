@@ -29,10 +29,7 @@ editor_options:
 - Figure \@ref(fig:fig5): Los Angeles County Monthly Precipitation from 2010 to 2022
 - Figure \@ref(fig:fig6): Los Angeles County AQI Values Time Series Decomposed Components
 - Figure \@ref(fig:fig7): Los Angeles County Daily AQI Time Series Nonseasonal Data
-- Figure \@ref(fig:fig9): Daily AQI Value vs Maximum Temperature
-- Figure \@ref(fig:fig10): Daily AQI Value vs Minimum Temperature
-- Figure \@ref(fig:fig11): Daily AQI Value vs Average Wind Speed
-- Figure \@ref(fig:fig13): Daily AQI Value vs Precipitation
+- Figure \@ref(fig:LASTFIG): Daily AQI Value Relationship with Weather Patterns
 
 # Introduction/Rationale
 Air quality is a critical component of environmental health, particularly in urban settings where industrial activities, vehicular emissions, and population density contribute significantly to pollution levels. Our team studied the seasonality and correlation of daily Air Quality Index (AQI) values and their correlation with weather patterns in Los Angeles County, California. We chose Los Angeles County due to its complex history with smog, urbanization, location, and weather patterns; one of the first air pollutant stations was located in Downtown Los Angeles (South Coast Air Quality Management District, n.d).
@@ -42,7 +39,7 @@ Furthermore, daily AQI values help determine changes and trends in air quality w
 # Research Questions
 1. Are the daily AQI values in Los Angeles County correlated with seasonality?
 
-2. What is the correlation between AQI and the different weather patterns present in Los Angeles County?
+2. What is the correlations between AQI and the different weather patterns present in Los Angeles County?
 
 # Data Wrangling
 The daily AQI values were pulled from the Environmental Protection Agency's (EPA) AirNow dataset. The weather data was pulled from the National Oceanic Atmospheric Administration's (NOAA) Climate Data Online webpage. Both datasets provided fairly complete daily data from January 1, 2010, to December 31, 2022. The datasets were cleaned and then combined to include the date of data collection and the five values used for time series analysis and generalized linear models. The five values are listed in the following table.
@@ -229,8 +226,6 @@ map1 <-mapview(Los_Angeles_County,
           zcol = "Site")
 map1
 ```
-<br>
-<br>
 We then created graphs to illustrate the average monthly AQI values, maximum and minimum temperature, average wind speed, and precipitation. Through exploratory analysis, we found that average AQI, minimum and maximum temperature, and average wind speed slightly increased between 2010 and 2022.
 <br>
 <br>
@@ -297,11 +292,11 @@ plot2
 ```{r fig4, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Los Angeles County Monthly Average Wind Speed"}
 plot3 <- combined_data.monthly %>%
   ggplot(aes(x = Date)) +
-  geom_line(aes(y = mean.Avg.Wind, color = "Average Wind Speed")) +
+  geom_line(aes(y = mean.Avg.Wind), col = "chocolate") +
   geom_smooth(aes(y = mean.Avg.Wind),
               method = "lm",
+              col = "black",
               se = FALSE,
-              col = "chocolate",
               alpha=0.7) +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   ylab("Wind Direction") +
@@ -355,8 +350,7 @@ plot(LA.AQI.daily.decomp)
 <br>
 <br>
 We then separated the trend and remainder data and added both together to great non-seasonal AQI values to determine how AQI value has changed throughout 2010 to 2022 without seasonality and to use when running the generalized linear models. To further analyze the non-seasonal AQI values, we reran the non-seasonal AQI values through the time series function to statistically analyze the trend, using the Mann-Kendall test. As displayed below, The p-value is less than 0.05. We can reject the null hypothesis, there is a trend present in the non-seasonal AQI values. The non-seasonal time series produces a tau value of 0.177, indicating there is an increasing trend in the non-seasonal AQI values. 
-<br>
-<br>
+
 ```{r, include=FALSE}
 LA.AQI.daily.components <- as.data.frame(LA.AQI.daily.decomp$time.series[,2:3])
 
@@ -386,8 +380,6 @@ MannKendall <- data.frame(
 knitr::kable(MannKendall,
              caption ="Mann-Kendall Test Results")
 ```
-<br>
-<br>
 Lastly, we plotted the non-seasonal AQI Values to illustrate the increasing trend between 2010 and 2022.
 <br>
 <br>
@@ -408,8 +400,57 @@ plot5
 
 ## Generalized Linear Model
 The linear regression model we built to predict daily Air Quality Index (AQI) values in Los Angeles using environmental data collected from local weather stations utilized maximum temperature (Temp.Max), minimum temperature (Temp.Min), average wind speed (Avg.Wind), and precipitation levels (Precipitation) as predictors. The analysis revealed statistically significant relationships between these environmental factors and AQI values.
+<br>
+<br>
+```{r fig9, include=FALSE}
+# DAILY_AQI_VALUE vs TMAX
+plot5 <- ggplot(combined_data, aes(x = Temp.Max, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Daily AQI Value vs Max. Temperature",
+         x = "Temperature",
+         y = "Daily AQI Value")
+```
 
+```{r fig10, include=FALSE}
+# DAILY_AQI_VALUE vs TMIN
+plot6 <- ggplot(combined_data, aes(x = Temp.Min, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Daily AQI Value vs Min. Temperature",
+         x = "Temperature",
+         y = "Daily AQI Value")
+```
+
+```{r fig11, include=FALSE}
+# DAILY_AQI_VALUE vs Wind Speed
+plot7 <- ggplot(combined_data, aes(x = Avg.Wind, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Daily AQI Value vs Avg. Wind Speed",
+         x = "Wind Speed (MPH)",
+         y = "Daily AQI Value")
+```
+
+```{r fig13, include=FALSE}
+# DAILY_AQI_VALUE vs PRCP
+plot8 <- ggplot(combined_data, aes(x = Precipitation, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Daily AQI Value vs Precipitation",
+         x = "Precipitation",
+         y = "Daily AQI Value")
+```
+
+```{r LASTFIG, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap="Daily AQI Value Relationship with Weather Patterns"}
+library(gridExtra)
+grid.arrange(plot5, plot6, plot7, plot8, nrow=2)
+```
+<br>
+<br>
 The model's intercept is set at -54.96859, indicating the baseline AQI value when all environmental predictors are zero. The coefficients for maximum temperature and minimum temperature were 0.99070 and 0.24680, respectively, highlighting a stronger influence of maximum temperature on AQI. Each unit increase in maximum temperature results in nearly a one-unit increase in AQI, suggesting that higher temperatures could exacerbate air pollution levels. In contrast, the coefficient for average wind speed was 3.18926, indicating a substantial increase in AQI with higher wind speeds, possibly due to the dispersion of pollutants over a larger area. Interestingly, precipitation had a negative coefficient of -2.94911, suggesting that rainfall might reduce AQI, potentially by washing out atmospheric pollutants.
+<br>
+<br>
 ```{r, include=FALSE}
 lm.aqi <- lm(combined_data$DAILY_AQI_VALUE ~ combined_data$Temp.Max + combined_data$Temp.Min + combined_data$Avg.Wind + combined_data$Precipitation)
 summary(lm.aqi)
@@ -428,58 +469,7 @@ stargazer(lm.aqi, type="html",
 <br>
 <br>
 The model's residual standard error is 14.53, reflecting the typical deviation of observed AQI values from the predicted values based on the model. With an R-squared value of 0.3371, the model explains approximately 33.71% of the variability in AQI, which is moderate, suggesting that other unaccounted factors might also influence air quality. The F-statistic of 599.9 and a p-value less than 2.2e-16 indicate a very strong overall model fit.
-<br>
-<br>
-```{r fig9, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Daily AQI Value vs Maximum Temperature"}
-# DAILY_AQI_VALUE vs TMAX
-plot5 <- ggplot(combined_data, aes(x = Temp.Max, y = DAILY_AQI_VALUE)) +
-    geom_point() +
-    geom_smooth(method = "lm", se = FALSE) +
-    labs(title = "Scatter plot of Daily AQI Value vs Maximum Temperature",
-         x = "Temperature",
-         y = "Daily AQI Value")
-```
-<br>
-<br>
-```{r fig10, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Daily AQI Value vs Minimum Temperature"}
-# DAILY_AQI_VALUE vs TMIN
-plot6 <- ggplot(combined_data, aes(x = Temp.Min, y = DAILY_AQI_VALUE)) +
-    geom_point() +
-    geom_smooth(method = "lm", se = FALSE) +
-    labs(title = "Scatter plot of Daily AQI Value vs Minimum Temperature",
-         x = "Temperature",
-         y = "Daily AQI Value")
-```
-<br>
-<br>
-```{r fig11, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Daily AQI Value vs Average Wind Speed"}
-# DAILY_AQI_VALUE vs Wind Speed
-plot7 <- ggplot(combined_data, aes(x = Avg.Wind, y = DAILY_AQI_VALUE)) +
-    geom_point() +
-    geom_smooth(method = "lm", se = FALSE) +
-    labs(title = "Scatter plot of Daily AQI Value vs Average Wind Speed",
-         x = "Wind Speed (MPH)",
-         y = "Daily AQI Value")
-```
-<br>
-<br>
-```{r fig13, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Daily AQI Value vs Precipitation"}
-# DAILY_AQI_VALUE vs PRCP
-plot8 <- ggplot(combined_data, aes(x = Precipitation, y = DAILY_AQI_VALUE)) +
-    geom_point() +
-    geom_smooth(method = "lm", se = FALSE) +
-    labs(title = "Scatter plot of Daily AQI Value vs Precipitation",
-         x = "Precipitation",
-         y = "Daily AQI Value")
-```
 
-```{r}
-library(gridExtra)
-grid.arrange(plot5, plot6, plot7, plot8, nrow=2)
-```
-blaksdl
-<br>
-<br>
 This model serves as a tool to understand the impact of specific meteorological conditions on air quality, which could be vital for developing strategies to manage air pollution in urban areas like Los Angeles. Further research might include additional environmental or anthropogenic factors to enhance the model's predictive accuracy and provide a more comprehensive understanding of the factors affecting air quality.
 
 # Conclusion
