@@ -19,9 +19,22 @@ editor_options:
 ---
 
 # List of Tables
-\listoftables
+- Figure \@ref(tab:table1): Table Dataset Structure Table
+- Figure \@ref(tab:table2): Mann-Kendall Test Results
+
 # List of Figures
-\listoffigures
+- Figure \@ref(fig:fig2): Los Angeles County Monthly AQI from 2010 to 2022
+- Figure \@ref(fig:fig3): Los Angeles County Monthly Minimum and Maximum Temperature from 2010 to 2022
+- Figure \@ref(fig:fig4): Los Angeles County Monthly Wind Direction 2 and 5 meters from 2010 to 2022
+- Figure \@ref(fig:fig5): Los Angeles County Monthly Precipitation from 2010 to 2022
+- Figure \@ref(fig:fig6): Los Angeles County AQI Values Time Series Decomposed Components
+- Figure \@ref(fig:fig7): Los Angeles County Daily AQI Time Series Nonseasonal Data
+- Figure \@ref(fig:fig9): Daily AQI Value vs Maximum Temperature
+- Figure \@ref(fig:fig10): Daily AQI Value vs Minimum Temperature
+- Figure \@ref(fig:fig11): Daily AQI Value vs Wind Direction, 2m
+- Figure \@ref(fig:fig12): Daily AQI Value vs Wind Direction, 5m
+- Figure \@ref(fig:fig13): Daily AQI Value vs Precipitation
+
 # Introduction/Rationale
 There is human health outcomes that are directly impacted by AQI.
 
@@ -30,12 +43,10 @@ There is human health outcomes that are directly impacted by AQI.
 
 2. What is the correlation between AQI and different weather phenomena in Los Angeles County?
 
-
 # Data Wrangling
 The daily AQI values were pulled from the Environmental Protection Agency's (EPA) AirNow dataset. The weather data was pulled from National Oceanic Atmospheric Administration (NOAA). Both datasets provided fairly complete daily data from January 1, 2010 to December 31, 2022. The datasets were cleaned and then combined to include the Data of data collection and the six values used for time series analysis and generalized linear models. 
 
 In order to conduct time series analysis on the daily AQI values, we conducted linear interpolation to fill any missing daily AQI values. We used linear interpolation as it creates an average, and best fits AQI's daily gradual change. 
-
 ```{r setup, include=FALSE}
 library(here)
 library(tidyverse)
@@ -166,7 +177,7 @@ colnames(LA.weather)[colnames(LA.weather) == "DATE"] <- "Date"
 combined_data <- merge(LA.weather, AQI_2010_2022, by = "Date")
 ```
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r table1, echo=FALSE, message=FALSE, warning=FALSE}
 DatasetTable <- data.frame(
   Column = c('Date', 
            'Precipitation',
@@ -180,7 +191,7 @@ DatasetTable <- data.frame(
                   'Daily Maximum Temperature',
                   'Daily Minimum Temperature',
                   'Wind Direction 2 meters Above Ground',
-                  'Wind Direction 5 meters Above Gound',
+                  'Wind Direction 5 meters Above Ground',
                   'Daily Air Quality Index (AQI) Value'))
 
 knitr::kable(DatasetTable,
@@ -188,7 +199,10 @@ knitr::kable(DatasetTable,
 ```
 
 # Exploratory Analysis
-```{r,fig.cap="Location of AQI and Weather Data Stations", echo=FALSE, message=FALSE, warning=FALSE}
+Both Stations, for AQI and weather data, are located in the city center of Los Angeles. For exploratory analysis, we created a map which differentiated where both stations are located.Below is a map illustrating the locations of both AQI and weather stations utilized in this study. Both are located in Los Angeles County.
+<br>
+<br>
+```{r, include=FALSE}
 data <- data.frame(
   Site = c("Weather Station", "Air Quality Station"),
   Latitude = c(34.02, 34.07),
@@ -204,8 +218,9 @@ Los_Angeles_County <- California_Counties %>%
 
 bbox_LA <- st_bbox(Los_Angeles_County)
 mapviewOptions(basemaps.color.shuffle = FALSE)
+```
 
-
+```{r fig1, echo=FALSE, message=FALSE, warning=FALSE, comment=NA}
 map1 <-mapview(Los_Angeles_County,
         col.regions = "azure1",
         col ='darkslategrey',
@@ -213,29 +228,140 @@ map1 <-mapview(Los_Angeles_County,
         map.types = "OpenStreetMap") +
   mapview(data_sf,
           zcol = "Site")
-
 map1
 ```
+<br>
+<br>
+We then created graphs to illustrate the average monthly AQI values, maximum and minimum temperature, Wind at 2 and 5 meters, and precipitation. Through exploratory analysis, we found that average AQI, minimum and maximum temperature slightly increase between 2010 and 2022.
+<br>
+<br>
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+combined_data.monthly <- combined_data %>%
+  mutate(year = lubridate::year(Date),
+         month = lubridate::month(Date, label = TRUE, abbr = FALSE)) %>%
+  group_by(year, month) %>%
+  summarise(mean.Wind.Direct.2m = mean(Wind.Direct.2m,
+                                            na.rm = TRUE),
+            mean.Wind.Direct.5m = mean(Wind.Direct.5m,
+                                       na.rm = TRUE),
+            mean.Temp.Max = mean(Temp.Max,
+                                 na.rm = TRUE),
+            mean.Temp.Min = mean(Temp.Min,
+                                 na.rm = TRUE),
+            mean.Precipitation = mean(Precipitation,
+                                 na.rm = TRUE),
+            mean.DAILY_AQI_VALUE = mean(DAILY_AQI_VALUE,
+                                 na.rm = TRUE))
 
+combined_data.monthly <- combined_data.monthly %>%
+  mutate(Date = make_date(year, month, 1))
+```
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Los Angeles County Daily AQI from 2010 to 2022"}
+```{r fig2, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Los Angeles County Monthly AQI from 2010 to 2022"}
 #plotting AQI values
-plot1 <- AQI_2010_2022 %>%
+plot1 <- combined_data.monthly %>%
   ggplot(aes(x = Date,
-             y = DAILY_AQI_VALUE)) +
-  geom_line(size = 0.5) +
-  geom_smooth(method = "lm", se = FALSE, col="red1") +
+             y = mean.DAILY_AQI_VALUE)) +
+  geom_line(size = 0.5, col = "deeppink4") +
+  geom_smooth(method = "lm", se = FALSE, col="black") +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  ylab("Daily Air Quality Index (AQI)") +
+  ylab("Monthly Air Quality Index (AQI)") +
   xlab("Year") +
-  ggtitle("Daily Air Quality Index (AQI) 2010-2022 in Los Angeles County") +
+  ggtitle("Monthly Air Quality Index (AQI) 2010-2022 in Los Angeles County") +
   finalproject.theme
 
 plot1
 ```
+<br>
+<br>
+```{r fig3, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Los Angeles County Monthly Minimum and Maximum Temperature from 2010 to 2022"}
+#plotting AQI values
+plot2 <- combined_data.monthly %>%
+  ggplot(aes(x = Date)) +
+  geom_line(aes(y = mean.Temp.Max, color = "Maximum Temperature")) +
+  geom_line(aes(y = mean.Temp.Min, color = "Minimum Temperature")) +
+  geom_smooth(aes(y = mean.Temp.Max), method = "lm", se = FALSE, col = "darkorange") +
+  geom_smooth(aes(y = mean.Temp.Min), method = "lm", se = FALSE, col = "darkseagreen") +
+  scale_color_manual(values = c("Maximum Temperature" = "darkgoldenrod1",
+                                 "Minimum Temperature" = "darkgreen"),
+                      labels = c("Maximum Temperature", "Minimum Temperature")) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  ylab("Temperature") +
+  xlab("Year") +
+  ggtitle("Monthly Minimum and Maximum Temperature 2010-2022 in Los Angeles County") +
+  labs(color = "Legend") +
+  finalproject.theme +
+  theme(axis.text.x = element_text(angle = 90, 
+                                   vjust = 0.5, 
+                                   hjust=1),
+        legend.position = "bottom")
+
+plot2
+```
+<br>
+<br>
+In comparison, monthly wind direction and precipitation have a slight decrease between 2010 and 2022. With the varying changes in the different weather phenomena -- temperature, wind direction, and precipitation -- we found it critical to understand how these phenomena factor into the daily AQI values and potential impacts on human health.
+<br>
+<br>
+```{r fig4, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Los Angeles County Monthly Wind Direction 2 and 5 meters from 2010 to 2022"}
+plot3 <- combined_data.monthly %>%
+  ggplot(aes(x = Date)) +
+  geom_line(aes(y = mean.Wind.Direct.2m, color = "Wind Direction, 2m"),
+            alpha=0.7) +
+  geom_line(aes(y = mean.Wind.Direct.5m, color = "Wind Direction, 5m"),
+            alpha=0.7) +
+  geom_smooth(aes(y = mean.Wind.Direct.2m),
+              method = "lm",
+              se = FALSE,
+              col = "chocolate",
+              alpha=0.7) +
+  geom_smooth(aes(y = mean.Wind.Direct.5m),
+              method = "lm",
+              se = FALSE,
+              col = "deepskyblue",
+              alpha=0.7) +
+  scale_color_manual(values = c("Wind Direction, 2m" = "chocolate4",
+                                 "Wind Direction, 5m" = "cornflowerblue"),
+                      labels = c("Wind Direction, 2m", "Wind Direction, 5m")) +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  ylab("Wind Direction") +
+  xlab("Year") +
+  ggtitle("Monthly Wind Direction at 2 and 5 meters during 2010-2022 in Los Angeles County") +
+  labs(color = "Legend") +
+  finalproject.theme +
+  theme(axis.text.x = element_text(angle = 90, 
+                                   vjust = 0.5, 
+                                   hjust=1),
+        legend.position = "bottom")
+
+plot3
+```
+<br>
+<br>
+```{r fig5, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Los Angeles County Monthly Precipitation from 2010 to 2022"}
+# Plot precip
+plot4 <- combined_data.monthly %>%
+  ggplot(aes(x = Date,
+             y = mean.Precipitation)) +
+  geom_line(size = 0.5, col = "darkslateblue") +
+  geom_smooth(method = "lm", se = FALSE, col="black") +
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  ylab("Precipitation") +
+  xlab("Year") +
+  ggtitle("Monthly Precipitation 2010-2022 in Los Angeles County") +
+  finalproject.theme
+
+plot4
+```
 
 # Analysis
-```{r}
+The analysis we conducted was to first determine the seasonality of daily AQI values, and then to run a regression analysis to determine which weather phenomena is correlated to daily AQI values.
+
+## Time Series Analysis
+In order to determine the effects of weather on daily AQI values, we first decomposed the Daily AQI values to gather and analyze the seasonal, trend, and remainder components of the data. The following Figure illustrates the decomposed Daily AQI value over time.
+<br>
+<br>
+```{r fig6, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Los Angeles County AQI Values Time Series Decomposed Components"}
 # generating time series objects
 f_month <- month(first(AQI_2010_2022$Date))
 f_year <- year(first(AQI_2010_2022$Date))
@@ -249,8 +375,12 @@ LA.AQI.daily.decomp <- stl(LA.AQI.daily.ts,
                            s.window = "periodic")
 plot(LA.AQI.daily.decomp)
 ```
-
-```{r}
+<br>
+<br>
+I then separated the trend and remainder data and added both together to great non-seasonal AQI values in order to determine how AQI value has changed through out 2010 to 2022 without seasonality and to use when running the generalized linear models.To further analyze the non-seasonal AQI values, we reran the non-seasonal AQI values through the time series function to statistically analyze the trend, using the Mann-Kendall test. As displayed below, The p-value is less than 0.05. We are able to reject the null hypothesis, there is a trend present in the non-seasonal AQI values. The non-seasonal time series produces a tau value of 0.177, indicating there is an increasing trend in the non-seasonal AQI values. 
+<br>
+<br>
+```{r, include=FALSE}
 LA.AQI.daily.components <- as.data.frame(LA.AQI.daily.decomp$time.series[,2:3])
 
 NonSeasonal.LA.AQI.daily <- mutate(LA.AQI.daily.components,
@@ -269,19 +399,113 @@ NonSeasonal.LA.AQI.daily <- NonSeasonal.LA.AQI.daily %>%
 MannKendall(NonSeasonal.LA.AQI.daily.ts)
 ```
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Nonseasonal Data from the Los Angeles County Daily AQI Time Series"}
+```{r table2, echo=FALSE, message=FALSE, warning=FALSE}
+MannKendall <- data.frame(
+   Components = c('tau', 
+           '2-sided pvalue'),
+  Value = c('0.177',
+                  '=< 2.22e-16'))
+
+knitr::kable(MannKendall,
+             caption ="Mann-Kendall Test Results")
+```
+<br>
+<br>
+Lastly, we plotted the non-seasonal AQI Values to illustrate the increasing trend between 2010 and 2022.
+<br>
+<br>
+```{r fig7, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Los Angeles County Daily AQI Time Series Nonseasonal Data"}
 #nonseasonal plot
-plot2 <- ggplot(NonSeasonal.LA.AQI.daily, aes(Date, NonSeasonal)) +
-  geom_point(color = "black", size = 0.5) +
+plot5 <- ggplot(NonSeasonal.LA.AQI.daily, aes(Date, NonSeasonal)) +
+  geom_point(color = "deeppink4", size = 0.5) +
   scale_y_log10() +
-  geom_smooth(method = "lm", color = "red1") +
+  geom_smooth(method = "lm", color = "black") +
   labs(x = "Date", y = "Non-Seasonal AQI Value", 
-  title = "Non-Seasonal AQI Value of Los Angeles County",
+  title = "Los Angeles County Non-Seasonal AQI Value",
   subtitle = "2010-2022") +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   finalproject.theme
 
-plot2
+plot5
+```
+
+## Generalized Linear Model
+```{r, include=FALSE}
+combined_data <- merge(combined_data,
+                       NonSeasonal.LA.AQI.daily,
+                       by = "Date")
+```
+
+```{r, include=FALSE}
+lm.aqi <- lm(combined_data$DAILY_AQI_VALUE ~ combined_data$Temp.Max + combined_data$Temp.Min + combined_data$Wind.Direct.2m + combined_data$Wind.Direct.5m + combined_data$Precipitation)
+summary(lm.aqi)
+```
+
+```{r fig8, results='asis', echo=FALSE, message=FALSE, warning=FALSE}
+library(stargazer)
+stargazer(lm.aqi, type="html",
+          dep.var.labels = c("Daily AQI Value"),
+          covariate.labels=c("Maximum Temperature",
+                             "Minimum Temperature",
+                             "Wind Direction, 2 meters",
+                             "Wind Direction, 5 meters",
+                             "Precipitation"),
+          out="models1.txt")
+```
+<br>
+<br>
+```{r fig9, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Daily AQI Value vs Maximum Temperature"}
+# DAILY_AQI_VALUE vs TMAX
+ggplot(combined_data, aes(x = Temp.Max, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Scatter plot of Daily AQI Value vs Maximum Temperature",
+         x = "Temperature",
+         y = "Daily AQI Value")
+```
+<br>
+<br>
+```{r fig10, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Daily AQI Value vs Minimum Temperature"}
+# DAILY_AQI_VALUE vs TMIN
+ggplot(combined_data, aes(x = Temp.Min, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Scatter plot of Daily AQI Value vs Minimum Temperature",
+         x = "Temperature",
+         y = "Daily AQI Value")
+```
+<br>
+<br>
+```{r fig11, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Daily AQI Value vs Wind Direction, 2m"}
+# DAILY_AQI_VALUE vs WDF2
+ggplot(combined_data, aes(x = Wind.Direct.2m, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Scatter plot of Daily AQI Value vs Wind Direction, 2m",
+         x = "Wind Direction",
+         y = "Daily AQI Value")
+```
+<br>
+<br>
+```{r fig12, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Daily AQI Value vs Wind Direction, 5m"}
+# DAILY_AQI_VALUE vs WDF5
+ggplot(combined_data, aes(x = Wind.Direct.5m, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Scatter plot of Daily AQI Value vs Wind Direction, 5m",
+         x = "Wind Direction",
+         y = "Daily AQI Value")
+```
+<br>
+<br>
+```{r fig13, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center', fig.cap= "Daily AQI Value vs Precipitation"}
+# DAILY_AQI_VALUE vs PRCP
+ggplot(combined_data, aes(x = Precipitation, y = DAILY_AQI_VALUE)) +
+    geom_point() +
+    geom_smooth(method = "lm", se = FALSE) +
+    labs(title = "Scatter plot of Daily AQI Value vs Precipitation",
+         x = "Precipitation",
+         y = "Daily AQI Value")
 ```
 
 # Summary and Conclusions
@@ -292,56 +516,6 @@ plot2
 
 
 
-
-
-library(ggplot2)
-
-lm.aqi <- lm(combined_data$DAILY_AQI_VALUE ~ combined_data$TMAX + combined_data$TMIN + combined_data$WDF2 + combined_data$WDF5 + combined_data$PRCP)
-
-summary(lm.aqi)
-lm.aqi
-
-library(ggplot2)
-
-# DAILY_AQI_VALUE vs TMAX
-ggplot(combined_data, aes(x = TMAX, y = DAILY_AQI_VALUE)) +
-    geom_point() +
-    geom_smooth(method = "lm", se = FALSE) +
-    labs(title = "Scatter plot of DAILY_AQI_VALUE vs TMAX",
-         x = "TMAX",
-         y = "DAILY AQI VALUE")
-
-# DAILY_AQI_VALUE vs TMIN
-ggplot(combined_data, aes(x = TMIN, y = DAILY_AQI_VALUE)) +
-    geom_point() +
-    geom_smooth(method = "lm", se = FALSE) +
-    labs(title = "Scatter plot of DAILY_AQI_VALUE vs TMIN",
-         x = "TMIN",
-         y = "DAILY AQI VALUE")
-
-# DAILY_AQI_VALUE vs WDF2
-ggplot(combined_data, aes(x = WDF2, y = DAILY_AQI_VALUE)) +
-    geom_point() +
-    geom_smooth(method = "lm", se = FALSE) +
-    labs(title = "Scatter plot of DAILY_AQI_VALUE vs WDF2",
-         x = "WDF2",
-         y = "DAILY AQI VALUE")
-
-# DAILY_AQI_VALUE vs WDF5
-ggplot(combined_data, aes(x = WDF5, y = DAILY_AQI_VALUE)) +
-    geom_point() +
-    geom_smooth(method = "lm", se = FALSE) +
-    labs(title = "Scatter plot of DAILY_AQI_VALUE vs WDF5",
-         x = "WDF5",
-         y = "DAILY AQI VALUE")
-
-# DAILY_AQI_VALUE vs PRCP
-ggplot(combined_data, aes(x = PRCP, y = DAILY_AQI_VALUE)) +
-    geom_point() +
-    geom_smooth(method = "lm", se = FALSE) +
-    labs(title = "Scatter plot of DAILY_AQI_VALUE vs PRCP",
-         x = "PRCP",
-         y = "DAILY AQI VALUE")
          
 
 
