@@ -12,8 +12,6 @@ output:
     fig_caption: yes
 subtitle: https://github.com/sarah-kear/KearLaCroix_ENV872_EDA_FinalProject
 geometry: margin=2.54cm
-fontsize: 12pt
-mainfont: Times New Roman
 editor_options:
   chunk_output_type: console
 ---
@@ -185,9 +183,9 @@ DatasetTable <- data.frame(
            'DAILY_AQI_VALUE'),
   Description = c('Date of Collection',
                   'Daily Total Precipitation',
-                  'Daily Maximum Temperature',
-                  'Daily Minimum Temperature',
-                  'Average Wind Speed',
+                  'Daily Maximum Temperature (°F)',
+                  'Daily Minimum Temperature (°F)',
+                  'Average Wind Speed (MPH)',
                   'Daily Air Quality Index (AQI) Value'))
 
 knitr::kable(DatasetTable,
@@ -278,7 +276,7 @@ plot2 <- combined_data.monthly %>%
                                  "Minimum Temperature" = "darkgreen"),
                       labels = c("Maximum Temperature", "Minimum Temperature")) +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  ylab("Temperature") +
+  ylab("Temperature (°F)") +
   xlab("Year") +
   ggtitle("Monthly Minimum and Maximum Temperature 2010-2022 in Los Angeles County") +
   labs(color = "Legend") +
@@ -299,7 +297,7 @@ plot3 <- combined_data.monthly %>%
               se = FALSE,
               alpha=0.7) +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  ylab("Wind Direction") +
+  ylab("Wind Direction (MPH)") +
   xlab("Year") +
   ggtitle("Monthly Average Wind Speed during 2010-2022 in Los Angeles County") +
   finalproject.theme
@@ -318,7 +316,7 @@ plot4 <- combined_data.monthly %>%
   geom_line(size = 0.5, col = "darkslateblue") +
   geom_smooth(method = "lm", se = FALSE, col="black") +
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
-  ylab("Precipitation") +
+  ylab("Precipitation (in)") +
   xlab("Year") +
   ggtitle("Monthly Precipitation 2010-2022 in Los Angeles County") +
   finalproject.theme
@@ -405,27 +403,27 @@ The linear regression model we built to predict daily Air Quality Index (AQI) va
 ```{r fig9, include=FALSE}
 # DAILY_AQI_VALUE vs TMAX
 plot5 <- ggplot(combined_data, aes(x = Temp.Max, y = DAILY_AQI_VALUE)) +
-    geom_point() +
+    geom_point(alpha = 0.5) +
     geom_smooth(method = "lm", se = FALSE) +
     labs(title = "Daily AQI Value vs Max. Temperature",
-         x = "Temperature",
+         x = "Temperature (°F)",
          y = "Daily AQI Value")
 ```
 
 ```{r fig10, include=FALSE}
 # DAILY_AQI_VALUE vs TMIN
 plot6 <- ggplot(combined_data, aes(x = Temp.Min, y = DAILY_AQI_VALUE)) +
-    geom_point() +
+    geom_point(alpha = 0.5) +
     geom_smooth(method = "lm", se = FALSE) +
     labs(title = "Daily AQI Value vs Min. Temperature",
-         x = "Temperature",
+         x = "Temperature (°F)",
          y = "Daily AQI Value")
 ```
 
 ```{r fig11, include=FALSE}
 # DAILY_AQI_VALUE vs Wind Speed
 plot7 <- ggplot(combined_data, aes(x = Avg.Wind, y = DAILY_AQI_VALUE)) +
-    geom_point() +
+    geom_point(alpha = 0.5) +
     geom_smooth(method = "lm", se = FALSE) +
     labs(title = "Daily AQI Value vs Avg. Wind Speed",
          x = "Wind Speed (MPH)",
@@ -435,10 +433,10 @@ plot7 <- ggplot(combined_data, aes(x = Avg.Wind, y = DAILY_AQI_VALUE)) +
 ```{r fig13, include=FALSE}
 # DAILY_AQI_VALUE vs PRCP
 plot8 <- ggplot(combined_data, aes(x = Precipitation, y = DAILY_AQI_VALUE)) +
-    geom_point() +
+    geom_point(alpha = 0.5) +
     geom_smooth(method = "lm", se = FALSE) +
     labs(title = "Daily AQI Value vs Precipitation",
-         x = "Precipitation",
+         x = "Precipitation (in)",
          y = "Daily AQI Value")
 ```
 
@@ -460,10 +458,10 @@ summary(lm.aqi)
 library(stargazer)
 stargazer(lm.aqi, type="html",
           dep.var.labels = c("Daily AQI Value"),
-          covariate.labels=c("Maximum Temperature",
-                             "Minimum Temperature",
-                             "Average Wind Speed",
-                             "Precipitation"),
+          covariate.labels=c("Maximum Temperature (°F)",
+                             "Minimum Temperature (°F)",
+                             "Average Wind Speed (MPH)",
+                             "Precipitation (in)"),
           out="models1.txt")
 ```
 <br>
