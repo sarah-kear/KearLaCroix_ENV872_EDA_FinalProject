@@ -6,7 +6,7 @@ Class: ENV 872/EDA
 Semester: Spring 2024
 
 # Project Members
-Sarah Kear and Cole La Croix
+Sarah Kear and Cole LaCroix
 
 # Overview
 This GitHub repository includes historical data of Los Angeles County's daily AQI and weather patterns which were downloaded from the U.S. EPA and NOAA. The data pulled from either organization were used to determine the seasonality of daily AQI values and the correlation between AQI values and weather patterns such as temperature, average wind speed, and precipitation.
