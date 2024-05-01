@@ -37,7 +37,7 @@ Furthermore, daily AQI values help determine changes and trends in air quality w
 # Research Questions
 1. Are the daily AQI values in Los Angeles County correlated with seasonality?
 
-2. What is the correlations between AQI and the different weather patterns present in Los Angeles County?
+2. What are the correlations between AQI and the different weather patterns present in Los Angeles County?
 
 # Data Wrangling
 The daily AQI values were pulled from the Environmental Protection Agency's (EPA) AirNow dataset. The weather data was pulled from the National Oceanic Atmospheric Administration's (NOAA) Climate Data Online webpage. Both datasets provided fairly complete daily data from January 1, 2010, to December 31, 2022. The datasets were cleaned and then combined to include the date of data collection and the five values used for time series analysis and generalized linear models. The five values are listed in the following table.
@@ -181,8 +181,8 @@ DatasetTable <- data.frame(
            'Temp.Min',
            "Avg.Wind",
            'DAILY_AQI_VALUE'),
-  Description = c('Date of Collection',
-                  'Daily Total Precipitation',
+  Description = c('Date of Collection (YYYY-MM-DD)',
+                  'Daily Total Precipitation (in)',
                   'Daily Maximum Temperature (°F)',
                   'Daily Minimum Temperature (°F)',
                   'Average Wind Speed (MPH)',
